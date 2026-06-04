@@ -1,0 +1,25 @@
+{
+  "name": "picu-sepsis-crf-prototype",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "typecheck": "vue-tsc --noEmit",
+    "generate:data": "python3 scripts/generate_crf_data.py"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "2.3.2",
+    "element-plus": "2.14.1",
+    "vue": "3.5.35"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "6.0.7",
+    "@types/node": "25.9.1",
+    "@vue/tsconfig": "0.9.1",
+    "typescript": "6.0.3",
+    "vite": "8.0.16",
+    "vue-tsc": "3.3.3"
+  }
+}

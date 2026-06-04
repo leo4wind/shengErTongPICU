@@ -10,7 +10,9 @@ from openpyxl import load_workbook
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKBOOK = ROOT / "业务调研2（2026.）省儿童PICU调研-脓毒症病历.xlsx"
-OUTPUT = ROOT / "src" / "data.js"
+DATA_DIR = ROOT / "src" / "data"
+RAW_DATA_DIR = DATA_DIR / "raw"
+LEGACY_OUTPUT = ROOT / "src" / "data.js"
 
 
 SOURCE_PATTERNS = {
@@ -375,37 +377,101 @@ def build_raw_tables(fields: list[dict], cases: list[dict]) -> list[dict]:
     return raw
 
 
+RAW_TABLE_EXPORTS = {
+    "patient_profile": ("patient-profile", "patientProfile"),
+    "diagnosis_orders": ("diagnosis-orders", "diagnosisOrders"),
+    "lis_results": ("lis-results", "lisResults"),
+    "nursing_vitals": ("nursing-vitals", "nursingVitals"),
+    "exam_reports": ("exam-reports", "examReports"),
+    "score_forms": ("score-forms", "scoreForms"),
+    "followup": ("followup", "followup"),
+}
+
+
+def ts_json(value: object) -> str:
+    return json.dumps(value, ensure_ascii=False, indent=2)
+
+
+def write_ts(path: Path, body: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(body, encoding="utf-8")
+
+
+def write_data_files(template: dict, cases: list[dict], evidence: list[dict], raw_tables: list[dict]) -> None:
+    template = {**template, "sourceSystemCounts": dict(template["sourceSystemCounts"])}
+
+    write_ts(
+        DATA_DIR / "crf-template.ts",
+        'import type { CrfTemplate } from "@/types";\n\n'
+        f"export const crfTemplate = {ts_json(template)} satisfies CrfTemplate;\n",
+    )
+    write_ts(
+        DATA_DIR / "case-records.ts",
+        'import type { CaseRecord } from "@/types";\n\n'
+        f"export const caseRecords = {ts_json(cases)} satisfies CaseRecord[];\n",
+    )
+    write_ts(
+        DATA_DIR / "source-evidence.ts",
+        'import type { SourceEvidence } from "@/types";\n\n'
+        f"export const sourceEvidence = {ts_json(evidence)} satisfies SourceEvidence[];\n",
+    )
+    write_ts(
+        DATA_DIR / "status-labels.ts",
+        'import type { InputModeLabels, StatusLabels } from "@/types";\n\n'
+        'export const statusLabels = {\n'
+        '  "auto_filled": "已自动带入",\n'
+        '  "manual_required": "需手填",\n'
+        '  "review_required": "需确认",\n'
+        '  "missing": "缺失",\n'
+        '  "source_unclear": "来源不明确"\n'
+        "} satisfies StatusLabels;\n\n"
+        "export const inputModeLabels = {\n"
+        '  "auto": "自动提取",\n'
+        '  "manual": "手动输入",\n'
+        '  "manual_unextractable": "手动输入（无法提取）",\n'
+        '  "review": "自动提取后人工分类",\n'
+        '  "unknown": "待确认"\n'
+        "} satisfies InputModeLabels;\n",
+    )
+
+    flattened: dict[str, list[dict]] = {table_id: [] for table_id in RAW_TABLE_EXPORTS}
+    for raw_set in raw_tables:
+        for table in raw_set["tables"]:
+            flattened[table["id"]].append({"caseId": raw_set["caseId"], **table})
+
+    raw_imports = []
+    raw_exports = []
+    for table_id, (filename, export_name) in RAW_TABLE_EXPORTS.items():
+        write_ts(
+            RAW_DATA_DIR / f"{filename}.ts",
+            'import type { RawTable } from "@/types";\n\n'
+            f"export const {export_name} = {ts_json(flattened[table_id])} satisfies RawTable[];\n",
+        )
+        raw_imports.append(f'import {{ {export_name} }} from "./raw/{filename}";')
+        raw_exports.append(export_name)
+
+    write_ts(
+        DATA_DIR / "index.ts",
+        'export { crfTemplate } from "./crf-template";\n'
+        'export { caseRecords } from "./case-records";\n'
+        'export { sourceEvidence } from "./source-evidence";\n'
+        'export { inputModeLabels, statusLabels } from "./status-labels";\n'
+        + "\n".join(raw_imports)
+        + "\n\n"
+        + f"export const rawTables = [{', '.join(raw_exports)}].flat();\n",
+    )
+
+    if LEGACY_OUTPUT.exists():
+        LEGACY_OUTPUT.unlink()
+
+
 def main() -> None:
     template = build_template()
     cases = build_cases(template["fields"])
     evidence = build_evidence(template["fields"], cases)
     raw_tables = build_raw_tables(template["fields"], cases)
-    data = {
-        "crfTemplate": template,
-        "caseRecords": cases,
-        "sourceEvidence": evidence,
-        "rawTables": raw_tables,
-        "statusLabels": {
-            "auto_filled": "已自动带入",
-            "manual_required": "需手填",
-            "review_required": "需确认",
-            "missing": "缺失",
-            "source_unclear": "来源不明确",
-        },
-        "inputModeLabels": {
-            "auto": "自动提取",
-            "manual": "手动输入",
-            "manual_unextractable": "手动输入（无法提取）",
-            "review": "自动提取后人工分类",
-            "unknown": "待确认",
-        },
-    }
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(
-        "window.CRF_DATA = " + json.dumps(data, ensure_ascii=False, indent=2) + ";\n",
-        encoding="utf-8",
-    )
-    print(f"Generated {OUTPUT.relative_to(ROOT)}")
+    write_data_files(template, cases, evidence, raw_tables)
+    print(f"Generated {DATA_DIR.relative_to(ROOT)}")
     print(f"Modules: {template['moduleCount']}; fields: {template['fieldCount']}; evidence: {len(evidence)}")
 
 
