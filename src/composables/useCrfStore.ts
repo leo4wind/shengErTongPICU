@@ -2,13 +2,17 @@ import { computed, reactive } from "vue";
 
 import {
   caseRecords,
+  bedsideObservations,
+  caseTrends,
   crfTemplate,
+  deviceMappingFields,
+  deviceReports,
   inputModeLabels,
   rawTables,
   sourceEvidence,
   statusLabels,
 } from "@/data";
-import type { CaseRecord, CrfField, RawMode, RawTableId, StatusKey, ViewName } from "@/types";
+import type { CaseRecord, CrfField, RawMode, RawTableId, SourceEvidence, StatusKey, ViewName } from "@/types";
 
 interface AppState {
   view: ViewName;
@@ -23,6 +27,8 @@ interface AppState {
   mappingModule: string;
   mappingInput: string;
   mappingSearch: string;
+  deviceFilter: string;
+  deviceKeyword: string;
 }
 
 const cases = reactive<CaseRecord[]>(structuredClone(caseRecords));
@@ -40,6 +46,8 @@ const state = reactive<AppState>({
   mappingModule: "all",
   mappingInput: "all",
   mappingSearch: "",
+  deviceFilter: "all",
+  deviceKeyword: "",
 });
 
 function countCaseStatus(caseRecord: CaseRecord) {
@@ -49,6 +57,7 @@ function countCaseStatus(caseRecord: CaseRecord) {
     review_required: 0,
     missing: 0,
     source_unclear: 0,
+    file_review_required: 0,
   };
   Object.values(caseRecord.values).forEach((item) => {
     counts[item.status] = (counts[item.status] || 0) + 1;
@@ -130,18 +139,46 @@ const currentField = computed(() => fieldById(state.fieldId) || crfTemplate.fiel
 const currentValue = computed(() => currentCase.value.values[currentField.value.id]);
 
 const sourceSystems = computed(() =>
-  [...new Set(crfTemplate.fields.flatMap((field) => field.sourceSystems))].sort(),
+  [...new Set([...crfTemplate.fields.flatMap((field) => field.sourceSystems), ...deviceReports.map((report) => report.system)])].sort(),
 );
 
+const evidenceWithDevices = computed<SourceEvidence[]>(() => [
+  ...sourceEvidence,
+  ...deviceReports
+    .filter((report) => report.status !== "missing")
+    .map((report) => ({
+      id: report.id,
+      caseId: report.caseId,
+      system: report.system,
+      title: report.deviceName,
+      time: report.reportTime,
+      snippet: report.conclusion,
+      relatedFields: report.relatedFields,
+      fileType: report.fileType,
+      fileUrl: report.fileName,
+      previewTitle: report.previewTitle,
+      extractedFields: report.extractedFields,
+      reviewStatus: report.status === "review_required" ? "待复核" : "已复核",
+    })),
+]);
+
 const currentEvidence = computed(() =>
-  sourceEvidence.filter(
+  evidenceWithDevices.value.filter(
     (source) =>
       source.caseId === state.caseId &&
       (source.relatedFields.includes(state.fieldId) || currentField.value.sourceSystems.includes(source.system)),
   ),
 );
 
-const caseEvidence = computed(() => sourceEvidence.filter((source) => source.caseId === state.caseId));
+const caseEvidence = computed(() => evidenceWithDevices.value.filter((source) => source.caseId === state.caseId));
+
+const currentDeviceReports = computed(() => deviceReports.filter((report) => report.caseId === state.caseId));
+
+const currentBedsideObservations = computed(() =>
+  bedsideObservations.filter((observation) => observation.caseId === state.caseId),
+);
+
+const currentTrend = computed(() => caseTrends.find((trend) => trend.caseId === state.caseId) || caseTrends[0]);
 
 const currentRawTables = computed(() => rawTables.filter((table) => table.caseId === state.caseId));
 
@@ -158,17 +195,24 @@ function ensureRawTable() {
 export function useCrfStore() {
   return {
     caseEvidence,
+    bedsideObservations,
     cases,
+    caseTrends,
     confirmField,
     countCaseStatus,
     crfTemplate,
+    currentBedsideObservations,
     currentCase,
+    currentDeviceReports,
     currentEvidence,
     currentField,
     currentModule,
     currentRawTable,
     currentRawTables,
     currentValue,
+    currentTrend,
+    deviceMappingFields,
+    deviceReports,
     ensureRawTable,
     fieldById,
     inputModeLabels,

@@ -14,6 +14,7 @@ const tagType: Record<StatusKey, "success" | "warning" | "primary" | "danger" | 
   review_required: "primary",
   missing: "danger",
   source_unclear: "info",
+  file_review_required: "warning",
 };
 </script>
 

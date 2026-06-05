@@ -1,6 +1,7 @@
 export { crfTemplate } from "./crf-template";
 export { caseRecords } from "./case-records";
 export { sourceEvidence } from "./source-evidence";
+export { bedsideObservations, caseTrends, deviceMappingFields, deviceReports } from "./device-data";
 export { inputModeLabels, statusLabels } from "./status-labels";
 import { patientProfile } from "./raw/patient-profile";
 import { diagnosisOrders } from "./raw/diagnosis-orders";

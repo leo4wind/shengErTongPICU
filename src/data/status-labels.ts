@@ -5,7 +5,8 @@ export const statusLabels = {
   "manual_required": "需手填",
   "review_required": "需确认",
   "missing": "缺失",
-  "source_unclear": "来源不明确"
+  "source_unclear": "来源不明确",
+  "file_review_required": "人工复核文件录入"
 } satisfies StatusLabels;
 
 export const inputModeLabels = {
@@ -13,5 +14,6 @@ export const inputModeLabels = {
   "manual": "手动输入",
   "manual_unextractable": "手动输入（无法提取）",
   "review": "自动提取后人工分类",
-  "unknown": "待确认"
+  "unknown": "待确认",
+  "file_review": "人工复核文件录入"
 } satisfies InputModeLabels;

@@ -4,15 +4,16 @@ import { computed } from "vue";
 import SourceTags from "@/components/SourceTags.vue";
 import { useCrfStore } from "@/composables/useCrfStore";
 
-const { crfTemplate, inputModeLabels, sourceSystems, state } = useCrfStore();
+const { crfTemplate, deviceMappingFields, inputModeLabels, sourceSystems, state } = useCrfStore();
 
 const inputOptions = computed(() => Object.entries(inputModeLabels).map(([value, label]) => ({ value, label })));
 
 const rows = computed(() => {
   const keyword = state.mappingSearch.trim().toLowerCase();
-  return crfTemplate.fields.filter((field) => {
+  return [...crfTemplate.fields, ...deviceMappingFields].filter((field) => {
     const matchesSource = state.mappingSource === "all" || field.sourceSystems.includes(state.mappingSource);
-    const matchesModule = state.mappingModule === "all" || field.moduleId === state.mappingModule;
+    const matchesModule =
+      state.mappingModule === "all" || ("moduleId" in field ? field.moduleId === state.mappingModule : field.module === state.mappingModule);
     const matchesInput = state.mappingInput === "all" || field.inputMode === state.mappingInput;
     const text = [field.module, field.label, field.options.join(" "), field.dataSource, field.rootSource, field.notes]
       .join(" ")
@@ -37,6 +38,8 @@ function inputModeText(mode: keyof typeof inputModeLabels) {
         <el-select v-model="state.mappingModule" placeholder="模块" style="width: 260px">
           <el-option label="全部模块" value="all" />
           <el-option v-for="module in crfTemplate.modules" :key="module.id" :label="module.name" :value="module.id" />
+          <el-option label="设备数据" value="设备数据" />
+          <el-option label="床边人工观测" value="床边人工观测" />
         </el-select>
         <el-select v-model="state.mappingInput" placeholder="输入方式" style="width: 210px">
           <el-option label="全部输入方式" value="all" />

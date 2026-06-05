@@ -1,10 +1,16 @@
 export type ViewName = "dashboard" | "raw" | "crf" | "mapping";
 
-export type RawMode = "organized" | "tables";
+export type RawMode = "organized" | "tables" | "device" | "trends";
 
-export type StatusKey = "auto_filled" | "manual_required" | "review_required" | "missing" | "source_unclear";
+export type StatusKey =
+  | "auto_filled"
+  | "manual_required"
+  | "review_required"
+  | "missing"
+  | "source_unclear"
+  | "file_review_required";
 
-export type InputModeKey = "auto" | "manual" | "manual_unextractable" | "review" | "unknown";
+export type InputModeKey = "auto" | "manual" | "manual_unextractable" | "review" | "unknown" | "file_review";
 
 export type FieldControl = "select" | "boolean" | "number" | "date" | "text";
 
@@ -71,6 +77,78 @@ export interface SourceEvidence {
   time: string;
   snippet: string;
   relatedFields: string[];
+  fileType?: "PDF" | "XPS" | "图片" | "纸质扫描件";
+  fileUrl?: string;
+  previewTitle?: string;
+  extractedFields?: DeviceExtractedField[];
+  reviewStatus?: "已复核" | "待复核" | "缺失";
+}
+
+export interface DeviceExtractedField {
+  label: string;
+  value: string;
+  unit?: string;
+  fieldId?: string;
+}
+
+export interface DeviceReport {
+  id: string;
+  caseId: string;
+  deviceName: string;
+  system: string;
+  fileName: string;
+  fileType: "PDF" | "XPS" | "图片" | "纸质扫描件";
+  reportTime: string;
+  status: "uploaded" | "missing" | "review_required";
+  previewTitle: string;
+  conclusion: string;
+  extractedFields: DeviceExtractedField[];
+  relatedFields: string[];
+}
+
+export interface BedsideObservation {
+  id: string;
+  caseId: string;
+  label: string;
+  value: string;
+  unit: string;
+  observedAt: string;
+  observer: string;
+  source: string;
+  status: StatusKey;
+}
+
+export interface TrendPoint {
+  time: string;
+  heartRate: number;
+  map: number;
+  temperature: number;
+}
+
+export interface DeviceEventPoint {
+  time: string;
+  label: string;
+  value: string;
+  system: string;
+}
+
+export interface CaseTrend {
+  caseId: string;
+  points: TrendPoint[];
+  events: DeviceEventPoint[];
+}
+
+export interface DeviceMappingField {
+  id: string;
+  module: string;
+  label: string;
+  options: string[];
+  sourceSystems: string[];
+  dataSource: string;
+  rootSource: string;
+  inputMode: InputModeKey;
+  notes: string;
+  annotationRequired: boolean;
 }
 
 export type RawTableId =

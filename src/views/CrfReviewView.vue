@@ -11,6 +11,7 @@ import type { CaseFieldValue, CrfField } from "@/types";
 const {
   confirmField,
   countCaseStatus,
+  currentBedsideObservations,
   currentCase,
   currentEvidence,
   currentField,
@@ -32,6 +33,7 @@ const statusOptions = [
   { label: "需确认", value: "review_required" },
   { label: "缺失", value: "missing" },
   { label: "来源不明确", value: "source_unclear" },
+  { label: "人工复核文件录入", value: "file_review_required" },
 ];
 
 const filteredFields = computed(() => {
@@ -48,6 +50,11 @@ const filteredFields = computed(() => {
 
 const counts = computed(() => countCaseStatus(currentCase.value));
 
+const showBedsidePanel = computed(() => {
+  const moduleName = currentModule.value.name;
+  return ["神经功能障碍", "仪器检查", "入ICU1小时内PIM3评分"].some((keyword) => moduleName.includes(keyword));
+});
+
 function valueFor(field: CrfField): CaseFieldValue {
   return currentCase.value.values[field.id];
 }
@@ -58,6 +65,11 @@ function updateValue(field: CrfField, value: unknown) {
 
 function openRaw() {
   state.rawMode = "organized";
+  setView("raw");
+}
+
+function openDeviceRaw() {
+  state.rawMode = "device";
   setView("raw");
 }
 </script>
@@ -102,6 +114,25 @@ function openRaw() {
           </el-select>
           <el-input v-model="state.fieldSearch" clearable placeholder="字段、来源、备注" />
           <span class="muted">手填 {{ counts.manual_required || 0 }} · 确认 {{ counts.review_required || 0 }}</span>
+        </div>
+
+        <div v-if="showBedsidePanel" class="bedside-panel">
+          <div class="panel-title">
+            <div>
+              <p class="eyebrow">床边人工观测表单</p>
+              <strong>ONSD / 有创颅内压 / 脑氧监测</strong>
+            </div>
+            <el-tag type="warning" effect="plain">需手填</el-tag>
+          </div>
+          <div class="bedside-grid">
+            <label v-for="item in currentBedsideObservations" :key="item.id" class="bedside-item">
+              <span>{{ item.label }}</span>
+              <el-input :model-value="item.value">
+                <template #append>{{ item.unit }}</template>
+              </el-input>
+              <p class="muted">{{ item.observedAt }} · {{ item.source }} · {{ item.observer }}</p>
+            </label>
+          </div>
         </div>
 
         <div class="field-list">
@@ -180,6 +211,21 @@ function openRaw() {
             <strong>{{ source.system }} · {{ source.title }}</strong>
             <span class="muted">{{ source.time }}</span>
             <p>{{ source.snippet }}</p>
+            <template v-if="source.fileType">
+              <div class="device-evidence-mini">
+                <el-tag effect="plain">{{ source.fileType }}</el-tag>
+                <span>{{ source.fileUrl }}</span>
+                <el-tag :type="source.reviewStatus === '待复核' ? 'warning' : 'success'" effect="plain">
+                  {{ source.reviewStatus }}
+                </el-tag>
+              </div>
+              <div class="device-mini-fields">
+                <span v-for="item in source.extractedFields" :key="item.label">
+                  {{ item.label }}：{{ item.value }}{{ item.unit || "" }}
+                </span>
+              </div>
+              <el-button :icon="Files" size="small" @click="openDeviceRaw">设备文件视图</el-button>
+            </template>
           </div>
           <el-empty v-if="!currentEvidence.length" description="没有匹配的 Mock 来源片段" />
         </div>
