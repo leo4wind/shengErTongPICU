@@ -12,6 +12,7 @@ const {
   currentRawTable,
   currentRawTables,
   currentDeviceReports,
+  currentLifecycle,
   currentTrend,
   ensureRawTable,
   fieldById,
@@ -170,7 +171,7 @@ function jumpFromTable() {
                     <label v-for="item in report.extractedFields" :key="item.label" class="device-field-item">
                       <span>{{ item.label }}</span>
                       <el-input :model-value="item.value" :disabled="report.status === 'missing'">
-                        <template v-if="item.unit" #append>{{ item.unit }}</template>
+                        <template v-if="'unit' in item && item.unit" #append>{{ item.unit }}</template>
                       </el-input>
                     </label>
                   </div>
@@ -228,6 +229,63 @@ function jumpFromTable() {
                 <span class="muted">{{ event.time }}</span>
                 <strong>{{ event.label }} · {{ event.value }}</strong>
                 <SourceTags :systems="[event.system]" />
+              </div>
+            </section>
+          </div>
+        </el-tab-pane>
+
+        <el-tab-pane label="全周期时间轴" name="lifecycle">
+          <div class="lifecycle-layout">
+            <section class="lifecycle-timeline">
+              <el-timeline>
+                <el-timeline-item
+                  v-for="event in currentLifecycle.events"
+                  :key="event.id"
+                  :timestamp="event.time"
+                  placement="top"
+                >
+                  <el-card shadow="never" class="timeline-event-card">
+                    <div class="panel-title">
+                      <strong>{{ event.stage }} · {{ event.title }}</strong>
+                      <SourceTags :systems="[event.sourceSystem]" />
+                    </div>
+                    <p class="muted">{{ event.description }}</p>
+                    <div v-if="event.linkedFields?.length" class="field-link-row">
+                      <el-button
+                        v-for="fieldId in event.linkedFields"
+                        :key="fieldId"
+                        :icon="Link"
+                        size="small"
+                        :disabled="!fieldById(fieldId)"
+                        @click="jumpToField(fieldId)"
+                      >
+                        {{ fieldById(fieldId)?.label || fieldId }}
+                      </el-button>
+                    </div>
+                  </el-card>
+                </el-timeline-item>
+              </el-timeline>
+            </section>
+
+            <section class="lifecycle-side-panel">
+              <div class="panel-title">
+                <strong>同轴临床事件</strong>
+                <el-tag effect="plain">生命体征 / 检验 / 设备</el-tag>
+              </div>
+              <div v-for="event in currentTrend.events" :key="event.time" class="evidence-item">
+                <span class="muted">{{ event.time }}</span>
+                <strong>{{ event.label }} · {{ event.value }}</strong>
+                <SourceTags :systems="[event.system]" />
+              </div>
+              <el-divider />
+              <div class="panel-title">
+                <strong>设备源文件</strong>
+                <el-tag type="warning" effect="plain">{{ currentDeviceReports.length }} 份</el-tag>
+              </div>
+              <div v-for="report in currentDeviceReports" :key="report.id" class="evidence-item">
+                <strong>{{ report.deviceName }}</strong>
+                <span class="muted">{{ report.reportTime }} · {{ report.fileName }}</span>
+                <p>{{ report.conclusion }}</p>
               </div>
             </section>
           </div>

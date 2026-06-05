@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { Check, Files } from "@element-plus/icons-vue";
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
-import CaseSummary from "@/components/CaseSummary.vue";
 import SourceTags from "@/components/SourceTags.vue";
 import StatusTag from "@/components/StatusTag.vue";
 import { useCrfStore } from "@/composables/useCrfStore";
@@ -23,7 +22,7 @@ const {
   setView,
   state,
   updateFieldValue,
-  crfTemplate,
+  currentTemplate,
 } = useCrfStore();
 
 const statusOptions = [
@@ -35,6 +34,8 @@ const statusOptions = [
   { label: "来源不明确", value: "source_unclear" },
   { label: "人工复核文件录入", value: "file_review_required" },
 ];
+
+const evidenceDrawerVisible = ref(false);
 
 const filteredFields = computed(() => {
   const keyword = state.fieldSearch.trim().toLowerCase();
@@ -52,11 +53,23 @@ const counts = computed(() => countCaseStatus(currentCase.value));
 
 const showBedsidePanel = computed(() => {
   const moduleName = currentModule.value.name;
-  return ["神经功能障碍", "仪器检查", "入ICU1小时内PIM3评分"].some((keyword) => moduleName.includes(keyword));
+  return ["神经功能障碍", "仪器检查", "入ICU1小时内PIM3评分", "设备参数"].some((keyword) => moduleName.includes(keyword));
 });
 
+function displayFieldLabel(field: CrfField) {
+  const terseBooleanLabel = ["无", "有", "是", "否"].includes(field.label.trim());
+  return terseBooleanLabel ? `${field.module}：${field.label}` : field.label;
+}
+
 function valueFor(field: CrfField): CaseFieldValue {
-  return currentCase.value.values[field.id];
+  return (
+    currentCase.value.values[field.id] || {
+      value: "",
+      status: "missing",
+      confirmedBy: "",
+      updatedAt: "",
+    }
+  );
 }
 
 function updateValue(field: CrfField, value: unknown) {
@@ -72,21 +85,25 @@ function openDeviceRaw() {
   state.rawMode = "device";
   setView("raw");
 }
+
+function openEvidenceDrawer() {
+  evidenceDrawerVisible.value = true;
+}
 </script>
 
 <template>
-  <section class="crf-layout">
+  <section class="crf-layout evidence-collapsed">
     <aside class="module-sidebar">
       <el-card shadow="never">
         <template #header>
           <div class="panel-title">
             <span>模块</span>
-            <strong>{{ crfTemplate.moduleCount }} 个</strong>
+            <strong>{{ currentTemplate.moduleCount }} 个</strong>
           </div>
         </template>
         <div class="module-list">
           <button
-            v-for="(module, index) in crfTemplate.modules"
+            v-for="(module, index) in currentTemplate.modules"
             :key="module.id"
             class="module-button"
             :class="{ active: module.id === state.moduleId }"
@@ -104,16 +121,15 @@ function openDeviceRaw() {
 
     <main class="crf-main">
       <el-card shadow="never" class="work-card">
-        <CaseSummary />
-      </el-card>
-
-      <el-card shadow="never" class="work-card">
         <div class="filter-bar">
           <el-select v-model="state.statusFilter" placeholder="状态" style="width: 180px">
             <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
           </el-select>
           <el-input v-model="state.fieldSearch" clearable placeholder="字段、来源、备注" />
           <span class="muted">手填 {{ counts.manual_required || 0 }} · 确认 {{ counts.review_required || 0 }}</span>
+          <div class="filter-actions">
+            <el-button :icon="Files" type="primary" plain @click="openEvidenceDrawer">弹出来源证据</el-button>
+          </div>
         </div>
 
         <div v-if="showBedsidePanel" class="bedside-panel">
@@ -146,8 +162,9 @@ function openDeviceRaw() {
             <div class="field-grid">
               <div class="field-title">
                 <el-button link type="primary" @click="selectField(field.id)">
-                  {{ field.label }}
+                  {{ displayFieldLabel(field) }}
                 </el-button>
+                <el-tag v-if="field.label !== displayFieldLabel(field)" type="info" effect="plain" size="small">字段项</el-tag>
                 <SourceTags :systems="field.sourceSystems" />
                 <p class="muted">{{ field.notes || field.dataSource || "来源待确认" }}</p>
               </div>
@@ -191,50 +208,42 @@ function openDeviceRaw() {
       </el-card>
     </main>
 
-    <aside class="evidence-sidebar">
-      <el-card shadow="never">
-        <template #header>
-          <div class="panel-title">
-            <span>来源证据</span>
-            <strong>{{ currentField.sourceSystems[0] }}</strong>
-          </div>
-        </template>
-        <div class="evidence-current">
-          <h3>{{ currentField.label }}</h3>
-          <StatusTag :status="currentValue.status" />
-          <p class="muted">{{ currentField.dataSource || "原表未明确数据来源" }}</p>
-          <el-button :icon="Files" @click="openRaw">原始资料</el-button>
+    <el-drawer v-model="evidenceDrawerVisible" title="来源证据" direction="rtl" size="520px">
+      <div class="evidence-current drawer-evidence-current">
+        <h3>{{ displayFieldLabel(currentField) }}</h3>
+        <StatusTag :status="currentValue.status" />
+        <p class="muted">{{ currentField.dataSource || "原表未明确数据来源" }}</p>
+        <el-button :icon="Files" @click="openRaw">原始资料</el-button>
+      </div>
+      <el-divider />
+      <div class="evidence-list">
+        <div v-for="source in currentEvidence" :key="source.id" class="evidence-item">
+          <strong>{{ source.system }} · {{ source.title }}</strong>
+          <span class="muted">{{ source.time }}</span>
+          <p>{{ source.snippet }}</p>
+          <template v-if="source.fileType">
+            <div class="device-evidence-mini">
+              <el-tag effect="plain">{{ source.fileType }}</el-tag>
+              <span>{{ source.fileUrl }}</span>
+              <el-tag :type="source.reviewStatus === '待复核' ? 'warning' : 'success'" effect="plain">
+                {{ source.reviewStatus }}
+              </el-tag>
+            </div>
+            <div class="device-mini-fields">
+              <span v-for="item in source.extractedFields" :key="item.label">
+                {{ item.label }}：{{ item.value }}{{ item.unit || "" }}
+              </span>
+            </div>
+            <el-button :icon="Files" size="small" @click="openDeviceRaw">设备文件视图</el-button>
+          </template>
         </div>
-        <el-divider />
-        <div class="evidence-list">
-          <div v-for="source in currentEvidence" :key="source.id" class="evidence-item">
-            <strong>{{ source.system }} · {{ source.title }}</strong>
-            <span class="muted">{{ source.time }}</span>
-            <p>{{ source.snippet }}</p>
-            <template v-if="source.fileType">
-              <div class="device-evidence-mini">
-                <el-tag effect="plain">{{ source.fileType }}</el-tag>
-                <span>{{ source.fileUrl }}</span>
-                <el-tag :type="source.reviewStatus === '待复核' ? 'warning' : 'success'" effect="plain">
-                  {{ source.reviewStatus }}
-                </el-tag>
-              </div>
-              <div class="device-mini-fields">
-                <span v-for="item in source.extractedFields" :key="item.label">
-                  {{ item.label }}：{{ item.value }}{{ item.unit || "" }}
-                </span>
-              </div>
-              <el-button :icon="Files" size="small" @click="openDeviceRaw">设备文件视图</el-button>
-            </template>
-          </div>
-          <el-empty v-if="!currentEvidence.length" description="没有匹配的 Mock 来源片段" />
-        </div>
-        <el-divider />
-        <div class="evidence-item">
-          <strong>数据根源</strong>
-          <p>{{ currentField.rootSource || "待接口调研补充" }}</p>
-        </div>
-      </el-card>
-    </aside>
+        <el-empty v-if="!currentEvidence.length" description="没有匹配的 Mock 来源片段" />
+      </div>
+      <el-divider />
+      <div class="evidence-item">
+        <strong>数据根源</strong>
+        <p>{{ currentField.rootSource || "待接口调研补充" }}</p>
+      </div>
+    </el-drawer>
   </section>
 </template>

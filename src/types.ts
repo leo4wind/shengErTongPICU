@@ -1,6 +1,6 @@
-export type ViewName = "dashboard" | "raw" | "crf" | "mapping";
+export type ViewName = "home" | "cohorts" | "dashboard" | "raw" | "crf" | "mapping" | "query" | "export";
 
-export type RawMode = "organized" | "tables" | "device" | "trends";
+export type RawMode = "organized" | "tables" | "device" | "trends" | "lifecycle";
 
 export type StatusKey =
   | "auto_filled"
@@ -67,6 +67,11 @@ export interface CaseRecord {
   completion: number;
   statusCounts: Partial<Record<StatusKey, number>>;
   values: Record<string, CaseFieldValue>;
+  cohortId?: string;
+  patientLifecycleId?: string;
+  enrollmentStatus?: "candidate" | "enrolled" | "excluded" | "withdrawn";
+  withdrawalReason?: string;
+  qualityStatus?: "complete" | "pending_review" | "data_missing";
 }
 
 export interface SourceEvidence {
@@ -175,3 +180,102 @@ export interface RawTable {
 export type StatusLabels = Record<StatusKey, string>;
 
 export type InputModeLabels = Record<InputModeKey, string>;
+
+export type CohortStatus = "draft" | "screening" | "active" | "closed";
+
+export type CandidateStatus = "pending" | "enrolled" | "excluded" | "deferred" | "needs_data";
+
+export interface RuleCondition {
+  id: string;
+  sourceSystem: string;
+  field: string;
+  operator: "contains" | "exists" | ">=" | "<=" | ">" | "<" | "=" | "between";
+  value: string;
+  unit?: string;
+  timeWindow?: string;
+  summary: string;
+}
+
+export interface RuleGroup {
+  id: string;
+  logic: "AND" | "OR";
+  summary: string;
+  conditions: Array<RuleCondition | RuleGroup>;
+}
+
+export interface CohortProject {
+  id: string;
+  name: string;
+  disease: string;
+  owner: string;
+  members: string[];
+  status: CohortStatus;
+  crfTemplateId: string;
+  rules: RuleGroup;
+  candidateCount: number;
+  enrolledCount: number;
+  withdrawnCount: number;
+  completion: number;
+  pendingReviewCount: number;
+  manualRequiredCount: number;
+  deviceMissingCount: number;
+  followupMissingCount: number;
+  mainCauseDistribution: Array<{ label: string; value: number }>;
+  updatedAt: string;
+}
+
+export interface ScreeningCandidate {
+  id: string;
+  patientId: string;
+  cohortId: string;
+  caseId?: string;
+  demographics: string;
+  diagnosis: string;
+  matchedRules: string[];
+  evidence: string[];
+  status: CandidateStatus;
+  owner: string;
+  scannedAt: string;
+  handledAt?: string;
+  note?: string;
+}
+
+export interface LifecycleEvent {
+  id: string;
+  stage: "门诊" | "住院" | "PICU" | "出院" | "随访";
+  time: string;
+  title: string;
+  description: string;
+  sourceSystem: string;
+  linkedFields?: string[];
+}
+
+export interface PatientLifecycle {
+  id: string;
+  caseId: string;
+  cohortId: string;
+  events: LifecycleEvent[];
+}
+
+export interface QueryTemplate {
+  id: string;
+  cohortId: string;
+  name: string;
+  description: string;
+  conditions: string[];
+  resultCaseIds: string[];
+  chartType: "km" | "trend" | "distribution";
+  exportPreset: string;
+}
+
+export interface ExportJob {
+  id: string;
+  cohortId: string;
+  name: string;
+  queryTemplateId?: string;
+  includes: string[];
+  fileTypes: string[];
+  status: "ready" | "running" | "finished";
+  createdBy: string;
+  createdAt: string;
+}
