@@ -3,3 +3,7 @@ dist/
 .vite/
 *.tsbuildinfo
 node_modules/.tmp/
+.DS_Store
+.playwright-cli/
+output/
+reasonix.toml

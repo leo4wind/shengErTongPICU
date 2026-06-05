@@ -72,13 +72,21 @@ function openRaw() {
             <strong>{{ crfTemplate.moduleCount }} 个</strong>
           </div>
         </template>
-        <el-menu :default-active="state.moduleId" @select="selectModule">
-          <el-menu-item v-for="module in crfTemplate.modules" :key="module.id" :index="module.id">
-            <span>{{ module.name }}</span>
-            <template #title>{{ module.name }}</template>
-            <el-tag size="small" effect="plain">{{ module.fieldCount }}</el-tag>
-          </el-menu-item>
-        </el-menu>
+        <div class="module-list">
+          <button
+            v-for="(module, index) in crfTemplate.modules"
+            :key="module.id"
+            class="module-button"
+            :class="{ active: module.id === state.moduleId }"
+            type="button"
+            :aria-pressed="module.id === state.moduleId"
+            @click="selectModule(module.id)"
+          >
+            <span class="module-index">{{ String(index + 1).padStart(2, "0") }}</span>
+            <span class="module-name">{{ module.name }}</span>
+            <span class="module-count">{{ module.fieldCount }}</span>
+          </button>
+        </div>
       </el-card>
     </aside>
 
