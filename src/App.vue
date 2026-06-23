@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Connection, DataBoard, DocumentChecked, Files } from "@element-plus/icons-vue";
+import { Connection, DataBoard, DocumentChecked, Files, List, Monitor } from "@element-plus/icons-vue";
 import { computed } from "vue";
 
 import CaseSummary from "@/components/CaseSummary.vue";
@@ -7,9 +7,11 @@ import { useCrfStore } from "@/composables/useCrfStore";
 import CohortCenterView from "@/views/CohortCenterView.vue";
 import CrfReviewView from "@/views/CrfReviewView.vue";
 import DashboardView from "@/views/DashboardView.vue";
+import DeviceFilesView from "@/views/DeviceFilesView.vue";
 import ExportCenterView from "@/views/ExportCenterView.vue";
 import FieldMappingView from "@/views/FieldMappingView.vue";
 import HomeView from "@/views/HomeView.vue";
+import OrganizedSourcesView from "@/views/OrganizedSourcesView.vue";
 import QueryAnalysisView from "@/views/QueryAnalysisView.vue";
 import RawMaterialsView from "@/views/RawMaterialsView.vue";
 import type { ViewName } from "@/types";
@@ -19,6 +21,8 @@ const { setView, state } = useCrfStore();
 const pageTitle = computed(() => {
   const labels: Record<ViewName, string> = {
     home: "首页",
+    raw_organized: "按来源整理",
+    raw_device: "设备文件视图",
     raw: "数据来源",
     cohorts: "项目/队列管理中心",
     dashboard: "队列全景看板",
@@ -46,6 +50,14 @@ function handleMenuSelect(index: string) {
         <el-menu-item index="home">
           <el-icon><DataBoard /></el-icon>
           <span>首页</span>
+        </el-menu-item>
+        <el-menu-item index="raw_organized">
+          <el-icon><List /></el-icon>
+          <span>按来源整理</span>
+        </el-menu-item>
+        <el-menu-item index="raw_device">
+          <el-icon><Monitor /></el-icon>
+          <span>设备文件视图</span>
         </el-menu-item>
         <el-menu-item index="raw">
           <el-icon><Files /></el-icon>
@@ -90,6 +102,8 @@ function handleMenuSelect(index: string) {
 
       <el-main class="app-main">
         <HomeView v-if="state.view === 'home'" />
+        <OrganizedSourcesView v-else-if="state.view === 'raw_organized'" />
+        <DeviceFilesView v-else-if="state.view === 'raw_device'" />
         <CohortCenterView v-else-if="state.view === 'cohorts'" />
         <DashboardView v-else-if="state.view === 'dashboard'" />
         <RawMaterialsView v-else-if="state.view === 'raw'" />

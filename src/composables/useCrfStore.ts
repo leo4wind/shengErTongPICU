@@ -93,7 +93,7 @@ const state = reactive<AppState>({
   caseId: sepsisCases[0].id,
   moduleId: crfTemplate.modules[0].id,
   fieldId: crfTemplate.modules[0].fields[0].id,
-  rawMode: "organized",
+  rawMode: "tables",
   rawTableId: "patient_profile",
   statusFilter: "all",
   fieldSearch: "",
@@ -190,7 +190,7 @@ function selectCohort(cohortId: string, view: ViewName = state.view) {
   state.fieldId = template.modules[0].fields[0].id;
   state.caseId = cases.find((caseRecord) => caseRecord.cohortId === cohortId)?.id || state.caseId;
   state.rawTableId = "patient_profile";
-  state.rawMode = "organized";
+  state.rawMode = "tables";
   state.queryTemplateId = queryTemplates.find((template) => template.cohortId === cohortId)?.id || state.queryTemplateId;
   state.mappingModule = "all";
   state.mappingSource = "all";

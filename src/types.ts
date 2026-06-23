@@ -1,6 +1,6 @@
-export type ViewName = "home" | "cohorts" | "dashboard" | "raw" | "crf" | "mapping" | "query" | "export";
+export type ViewName = "home" | "cohorts" | "dashboard" | "raw" | "raw_organized" | "raw_device" | "crf" | "mapping" | "query" | "export";
 
-export type RawMode = "organized" | "tables" | "device" | "trends" | "lifecycle";
+export type RawMode = "tables" | "trends" | "lifecycle";
 
 export type StatusKey =
   | "auto_filled"

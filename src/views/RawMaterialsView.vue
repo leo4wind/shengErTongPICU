@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Check, Link, Coin, DataAnalysis, DataBoard, Promotion, Collection } from "@element-plus/icons-vue";
+import { Link, Coin, DataAnalysis, DataBoard, Promotion, Collection } from "@element-plus/icons-vue";
 import { computed, watchEffect } from "vue";
 
 import SourceTags from "@/components/SourceTags.vue";
@@ -148,88 +148,6 @@ function jumpFromTable() {
 
     <el-card shadow="never" class="work-card">
       <el-tabs v-model="state.rawMode">
-        <el-tab-pane label="按来源整理" name="organized">
-          <div class="raw-source-grid">
-            <el-card v-for="source in caseEvidence" :key="source.id" shadow="never" class="source-card">
-              <template #header>
-                <div class="source-card-header">
-                  <SourceTags :systems="[source.system]" />
-                  <strong>{{ source.title }}</strong>
-                </div>
-              </template>
-              <p class="muted">{{ source.time }}</p>
-              <p class="source-snippet">{{ source.snippet }}</p>
-              <div class="field-link-row">
-                <el-button
-                  v-for="fieldId in source.relatedFields.slice(0, 6)"
-                  :key="fieldId"
-                  :icon="Link"
-                  size="small"
-                  @click="jumpToField(fieldId)"
-                >
-                  {{ fieldById(fieldId)?.label }}
-                </el-button>
-              </div>
-            </el-card>
-          </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="设备文件视图" name="device">
-          <div class="device-evidence-stack">
-            <el-card v-for="report in currentDeviceReports" :key="report.id" shadow="never" class="device-evidence-card">
-              <div class="device-evidence-grid">
-                <section class="device-preview">
-                  <div class="panel-title">
-                    <strong>{{ report.previewTitle }}</strong>
-                    <el-tag effect="plain">{{ report.fileType }}</el-tag>
-                  </div>
-                  <div class="device-image-viewer" :class="{ missing: report.status === 'missing' }">
-                    <img v-if="report.status !== 'missing'" :src="'/images/' + report.fileName" :alt="report.previewTitle" />
-                    <div v-else class="device-image-missing">
-                      <span>未上传设备文件</span>
-                    </div>
-                    <p class="device-image-caption">{{ report.conclusion }}</p>
-                  </div>
-                  <p class="muted">{{ report.system }} · {{ report.reportTime }}</p>
-                </section>
-
-                <section class="device-extract-panel">
-                  <div class="panel-title">
-                    <strong>提取字段表单</strong>
-                    <el-tag :type="report.status === 'missing' ? 'danger' : report.status === 'review_required' ? 'warning' : 'success'" effect="plain">
-                      {{ report.status === "missing" ? "缺失" : report.status === "review_required" ? "待复核" : "已复核" }}
-                    </el-tag>
-                  </div>
-                  <div class="device-field-grid">
-                    <label v-for="item in report.extractedFields" :key="item.label" class="device-field-item">
-                      <span>{{ item.label }}</span>
-                      <el-input :model-value="item.value" :disabled="report.status === 'missing'">
-                        <template v-if="'unit' in item && item.unit" #append>{{ item.unit }}</template>
-                      </el-input>
-                    </label>
-                  </div>
-                  <div class="field-link-row">
-                    <el-button
-                      v-for="fieldId in report.relatedFields"
-                      :key="fieldId"
-                      :icon="Link"
-                      size="small"
-                      :disabled="!fieldById(fieldId)"
-                      @click="jumpToField(fieldId)"
-                    >
-                      {{ fieldById(fieldId)?.label || fieldId }}
-                    </el-button>
-                  </div>
-                  <el-button :icon="Check" type="primary" plain :disabled="report.status === 'missing'">
-                    确认提取值
-                  </el-button>
-                </section>
-              </div>
-            </el-card>
-          </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="原始多表" name="tables">
           <div class="raw-table-layout">
             <aside class="raw-table-menu">
               <button
