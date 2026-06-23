@@ -8,6 +8,7 @@ export const crfTemplate = {
   "fieldCount": 74,
   "sourceSystemCounts": {
     "EMR/住院病历": 36,
+    "院外数据": 5,
     "随访": 2,
     "来源待确认": 3,
     "护理/监护": 11,

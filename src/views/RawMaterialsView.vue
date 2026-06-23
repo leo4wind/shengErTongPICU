@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { Check, Link } from "@element-plus/icons-vue";
+import { Check, Link, Coin, DataAnalysis, DataBoard, Promotion, Collection } from "@element-plus/icons-vue";
 import { computed, watchEffect } from "vue";
 
-import CaseSummary from "@/components/CaseSummary.vue";
 import SourceTags from "@/components/SourceTags.vue";
 import { useCrfStore } from "@/composables/useCrfStore";
 import type { RawTableId } from "@/types";
@@ -14,6 +13,8 @@ const {
   currentDeviceReports,
   currentLifecycle,
   currentTrend,
+  currentTemplate,
+  sourceSystems,
   ensureRawTable,
   fieldById,
   selectField,
@@ -71,8 +72,78 @@ function jumpFromTable() {
 
 <template>
   <section class="view-stack">
-    <el-card shadow="never" class="work-card">
-      <CaseSummary />
+    <el-card shadow="never" class="governance-card">
+      <div class="governance-header">
+        <h3>
+          <el-icon><DataAnalysis /></el-icon>
+          数据治理流水线
+        </h3>
+        <span class="governance-sub">从原始数据源到结构化 CRF 字段的全链路治理</span>
+      </div>
+
+      <div class="governance-pipeline">
+        <div class="pipeline-step">
+          <div class="step-icon raw">
+            <el-icon><Collection /></el-icon>
+          </div>
+          <div class="step-body">
+            <strong>原始数据源</strong>
+            <small>多源异构数据接入</small>
+          </div>
+        </div>
+        <div class="pipeline-arrow">
+          <el-icon><Promotion /></el-icon>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-icon distill">
+            <el-icon><Coin /></el-icon>
+          </div>
+          <div class="step-body">
+            <strong>数据蒸馏</strong>
+            <small>半结构化 → 结构化萃取</small>
+          </div>
+        </div>
+        <div class="pipeline-arrow">
+          <el-icon><Promotion /></el-icon>
+        </div>
+        <div class="pipeline-step">
+          <div class="step-icon govern">
+            <el-icon><DataBoard /></el-icon>
+          </div>
+          <div class="step-body">
+            <strong>结构化治理</strong>
+            <small>字段映射 &middot; 校验 &middot; 归仓</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="governance-stats">
+        <div class="stat-item">
+          <span class="stat-value">{{ sourceSystems.length }}</span>
+          <span class="stat-label">数据源系统</span>
+        </div>
+        <div class="stat-divider" />
+        <div class="stat-item">
+          <span class="stat-value">{{ caseEvidence.length + currentDeviceReports.length }}</span>
+          <span class="stat-label">原始证据条目</span>
+        </div>
+        <div class="stat-divider" />
+        <div class="stat-item">
+          <span class="stat-value">{{ currentRawTables.length }}</span>
+          <span class="stat-label">原始数据表</span>
+        </div>
+        <div class="stat-divider" />
+        <div class="stat-item">
+          <span class="stat-value">{{ currentTemplate.fieldCount }}</span>
+          <span class="stat-label">结构化 CRF 字段</span>
+        </div>
+      </div>
+
+      <div class="governance-footer">
+        <span class="governance-tag" v-for="[sys, count] of Object.entries(currentTemplate.sourceSystemCounts)" :key="sys">
+          {{ sys }} ({{ count }})
+        </span>
+      </div>
     </el-card>
 
     <el-card shadow="never" class="work-card">
@@ -98,6 +169,61 @@ function jumpFromTable() {
                 >
                   {{ fieldById(fieldId)?.label }}
                 </el-button>
+              </div>
+            </el-card>
+          </div>
+        </el-tab-pane>
+
+        <el-tab-pane label="设备文件视图" name="device">
+          <div class="device-evidence-stack">
+            <el-card v-for="report in currentDeviceReports" :key="report.id" shadow="never" class="device-evidence-card">
+              <div class="device-evidence-grid">
+                <section class="device-preview">
+                  <div class="panel-title">
+                    <strong>{{ report.previewTitle }}</strong>
+                    <el-tag effect="plain">{{ report.fileType }}</el-tag>
+                  </div>
+                  <div class="device-image-viewer" :class="{ missing: report.status === 'missing' }">
+                    <img v-if="report.status !== 'missing'" :src="'/images/' + report.fileName" :alt="report.previewTitle" />
+                    <div v-else class="device-image-missing">
+                      <span>未上传设备文件</span>
+                    </div>
+                    <p class="device-image-caption">{{ report.conclusion }}</p>
+                  </div>
+                  <p class="muted">{{ report.system }} · {{ report.reportTime }}</p>
+                </section>
+
+                <section class="device-extract-panel">
+                  <div class="panel-title">
+                    <strong>提取字段表单</strong>
+                    <el-tag :type="report.status === 'missing' ? 'danger' : report.status === 'review_required' ? 'warning' : 'success'" effect="plain">
+                      {{ report.status === "missing" ? "缺失" : report.status === "review_required" ? "待复核" : "已复核" }}
+                    </el-tag>
+                  </div>
+                  <div class="device-field-grid">
+                    <label v-for="item in report.extractedFields" :key="item.label" class="device-field-item">
+                      <span>{{ item.label }}</span>
+                      <el-input :model-value="item.value" :disabled="report.status === 'missing'">
+                        <template v-if="'unit' in item && item.unit" #append>{{ item.unit }}</template>
+                      </el-input>
+                    </label>
+                  </div>
+                  <div class="field-link-row">
+                    <el-button
+                      v-for="fieldId in report.relatedFields"
+                      :key="fieldId"
+                      :icon="Link"
+                      size="small"
+                      :disabled="!fieldById(fieldId)"
+                      @click="jumpToField(fieldId)"
+                    >
+                      {{ fieldById(fieldId)?.label || fieldId }}
+                    </el-button>
+                  </div>
+                  <el-button :icon="Check" type="primary" plain :disabled="report.status === 'missing'">
+                    确认提取值
+                  </el-button>
+                </section>
               </div>
             </el-card>
           </div>
@@ -140,59 +266,6 @@ function jumpFromTable() {
                 />
               </el-table>
             </main>
-          </div>
-        </el-tab-pane>
-
-        <el-tab-pane label="设备文件视图" name="device">
-          <div class="device-evidence-stack">
-            <el-card v-for="report in currentDeviceReports" :key="report.id" shadow="never" class="device-evidence-card">
-              <div class="device-evidence-grid">
-                <section class="device-preview">
-                  <div class="panel-title">
-                    <strong>{{ report.previewTitle }}</strong>
-                    <el-tag effect="plain">{{ report.fileType }}</el-tag>
-                  </div>
-                  <div class="mock-file-viewer" :class="{ missing: report.status === 'missing' }">
-                    <span>{{ report.fileName }}</span>
-                    <strong>{{ report.status === "missing" ? "未上传设备文件" : report.deviceName }}</strong>
-                    <p>{{ report.conclusion }}</p>
-                  </div>
-                  <p class="muted">{{ report.system }} · {{ report.reportTime }}</p>
-                </section>
-
-                <section class="device-extract-panel">
-                  <div class="panel-title">
-                    <strong>提取字段表单</strong>
-                    <el-tag :type="report.status === 'missing' ? 'danger' : report.status === 'review_required' ? 'warning' : 'success'" effect="plain">
-                      {{ report.status === "missing" ? "缺失" : report.status === "review_required" ? "待复核" : "已复核" }}
-                    </el-tag>
-                  </div>
-                  <div class="device-field-grid">
-                    <label v-for="item in report.extractedFields" :key="item.label" class="device-field-item">
-                      <span>{{ item.label }}</span>
-                      <el-input :model-value="item.value" :disabled="report.status === 'missing'">
-                        <template v-if="'unit' in item && item.unit" #append>{{ item.unit }}</template>
-                      </el-input>
-                    </label>
-                  </div>
-                  <div class="field-link-row">
-                    <el-button
-                      v-for="fieldId in report.relatedFields"
-                      :key="fieldId"
-                      :icon="Link"
-                      size="small"
-                      :disabled="!fieldById(fieldId)"
-                      @click="jumpToField(fieldId)"
-                    >
-                      {{ fieldById(fieldId)?.label || fieldId }}
-                    </el-button>
-                  </div>
-                  <el-button :icon="Check" type="primary" plain :disabled="report.status === 'missing'">
-                    确认提取值
-                  </el-button>
-                </section>
-              </div>
-            </el-card>
           </div>
         </el-tab-pane>
 

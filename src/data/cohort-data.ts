@@ -427,6 +427,15 @@ export const tbiTrends = tbiCaseRecords.map((caseRecord, index) => ({
 
 export const tbiSourceEvidence = tbiCaseRecords.flatMap((caseRecord, index) => [
   {
+    id: `${caseRecord.id}-external`,
+    caseId: caseRecord.id,
+    system: "院外数据",
+    title: "院外数据接入",
+    time: `2026-06-0${index + 1} 08:00`,
+    snippet: "院外转诊记录、既往病史及外院检查数据经数据治理平台接入，清洗后统一结构化。",
+    relatedFields: ["tbi_baseline_gcs"],
+  },
+  {
     id: `${caseRecord.id}-pacs`,
     caseId: caseRecord.id,
     system: "检查/PACS",
