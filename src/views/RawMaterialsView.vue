@@ -148,6 +148,7 @@ function jumpFromTable() {
 
     <el-card shadow="never" class="work-card">
       <el-tabs v-model="state.rawMode">
+        <el-tab-pane label="原始多表" name="tables">
           <div class="raw-table-layout">
             <aside class="raw-table-menu">
               <button
