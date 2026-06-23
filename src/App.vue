@@ -19,9 +19,9 @@ const { setView, state } = useCrfStore();
 const pageTitle = computed(() => {
   const labels: Record<ViewName, string> = {
     home: "首页",
+    raw: "数据来源",
     cohorts: "项目/队列管理中心",
     dashboard: "队列全景看板",
-    raw: "原始资料与全周期",
     crf: "CRF 填审工作站",
     mapping: "字段映射",
     query: "高级查询与分析",
@@ -47,6 +47,10 @@ function handleMenuSelect(index: string) {
           <el-icon><DataBoard /></el-icon>
           <span>首页</span>
         </el-menu-item>
+        <el-menu-item index="raw">
+          <el-icon><Files /></el-icon>
+          <span>数据来源</span>
+        </el-menu-item>
         <el-menu-item index="cohorts">
           <el-icon><DataBoard /></el-icon>
           <span>项目/队列</span>
@@ -55,10 +59,7 @@ function handleMenuSelect(index: string) {
           <el-icon><DataBoard /></el-icon>
           <span>队列看板</span>
         </el-menu-item>
-        <el-menu-item index="raw">
-          <el-icon><Files /></el-icon>
-          <span>原始资料</span>
-        </el-menu-item>
+
         <el-menu-item index="crf">
           <el-icon><DocumentChecked /></el-icon>
           <span>CRF 填审</span>
