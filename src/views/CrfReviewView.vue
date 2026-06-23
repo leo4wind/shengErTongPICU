@@ -77,13 +77,11 @@ function updateValue(field: CrfField, value: unknown) {
 }
 
 function openRaw() {
-  state.rawMode = "organized";
   setView("raw");
 }
 
 function openDeviceRaw() {
-  state.rawMode = "device";
-  setView("raw");
+  setView("raw_device");
 }
 
 function openEvidenceDrawer() {

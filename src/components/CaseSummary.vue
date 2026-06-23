@@ -8,7 +8,7 @@ const { cohorts, countCaseStatus, currentCase, currentCohort, currentExportJobs,
 
 const counts = computed(() => countCaseStatus(currentCase.value));
 
-const patientContextViews = ["raw_organized", "raw_device", "raw", "crf"];
+const patientContextViews = ["raw_device", "raw", "crf"];
 
 const showPatientContext = computed(() => patientContextViews.includes(state.view));
 
