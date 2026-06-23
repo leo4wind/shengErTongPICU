@@ -1,4 +1,4 @@
-export type ViewName = "home" | "cohorts" | "dashboard" | "raw" | "raw_organized" | "raw_device" | "crf" | "mapping" | "query" | "export";
+export type ViewName = "home" | "cohorts" | "dashboard" | "raw" | "raw_device" | "crf" | "mapping" | "query" | "export";
 
 export type RawMode = "tables" | "trends" | "lifecycle";
 
