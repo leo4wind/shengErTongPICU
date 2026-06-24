@@ -31,7 +31,7 @@ function jumpToField(fieldId: string) {
                 <el-tag effect="plain">{{ report.fileType }}</el-tag>
               </div>
               <div class="device-image-viewer" :class="{ missing: report.status === 'missing' }">
-                <img v-if="report.status !== 'missing'" :src="'/images/' + report.fileName" :alt="report.previewTitle" />
+                <img v-if="report.status !== 'missing'" :src="`${import.meta.env.BASE_URL}images/${report.fileName}`" :alt="report.previewTitle" />
                 <div v-else class="device-image-missing">
                   <span>未上传设备文件</span>
                 </div>
