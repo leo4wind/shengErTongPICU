@@ -7,6 +7,8 @@ import type { ViewName } from "@/types";
 const { cohorts, currentCohort, setView } = useCrfStore();
 
 const flowSteps = [
+  { title: "设备对接", desc: "对接 TCCD/TCD/脑水肿仪/脑电图等离线设备，上传 PDF/XPS/图片等源文件。" },
+  { title: "数据对接", desc: "接入 EMR/HIS/LIS/PACS/护理/评分表/随访等多源异构数据，统一结构化。" },
   { title: "建队列", desc: "创建专病项目，配置负责人、成员、入排标准和 CRF 模板。" },
   { title: "筛患者", desc: "通过规则引擎模拟日扫 EMR/HIS/LIS/PACS 与设备数据，生成候选池。" },
   { title: "确认入组", desc: "研究员查看命中规则和证据，确认入组、排除、暂缓或补资料。" },
@@ -51,7 +53,7 @@ const modules: Array<{ title: string; desc: string; view: ViewName; icon: unknow
       <template #header>
         <div class="panel-title">
           <strong>项目流程</strong>
-          <el-tag effect="plain">7 步闭环</el-tag>
+          <el-tag effect="plain">9 步闭环</el-tag>
         </div>
       </template>
       <div class="home-flow">
